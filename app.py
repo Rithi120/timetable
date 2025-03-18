@@ -5,6 +5,7 @@ import json
 import os
 
 app = Flask(__name__)
+app = Flask(__name__, template_folder=os.path.join(os.getcwd(), 'templates'))
 app.secret_key = 'your_secret_key'
 
 # Initialize LoginManager
@@ -121,4 +122,5 @@ def todo():
     return render_template('todo.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))  # Use PORT from environment or default to 10000
+    app.run(host='0.0.0.0', port=port, debug=True)
