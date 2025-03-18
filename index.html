@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editable Timetable</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+
+        body  {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #69a0e4;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #69a0e4;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        th {
+            background-color: #69a0e4;
+            color: white;
+            font-weight: bold;
+        }
+
+        td {
+            cursor: pointer;
+            background-color: #fdfdfd;
+        }
+
+        td:hover {
+            background-color: #f1f1f1;
+        }
+
+        td:focus {
+            outline: none;
+            background-color: #d4e6f1;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #69bbe4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4f79ad;
+        }
+
+        button:focus {
+            outline: none;
+            background-color: #3e528e;
+        }
+
+/* General Dark Mode */
+.dark-mode {
+    background-color: #222;
+    color: white;
+}
+
+/* Timetable Dark Mode */
+.dark-mode table {
+    background-color: #333;
+    color: white;
+    border-color: #666;
+}
+
+.dark-mode th {
+    background-color: #555;
+    color: white;
+}
+
+.dark-mode td {
+    background-color: #444;
+    color: white;
+    border-color: #666;
+}
+
+/* Make sure input fields inside the timetable also switch to dark mode */
+.dark-mode input[type="text"],
+.dark-mode input[type="time"] {
+    background-color: #555;
+    color: white;
+    border: 1px solid #777;
+}
+
+.dark-mode input::placeholder {
+    color: #bbb;
+}
+
+/* Ensure the To-Do List also follows Dark Mode */
+.dark-mode #todoList {
+    background-color: #333;
+    color: white;
+}
+
+.dark-mode #todoList li {
+    border-bottom: 1px solid #666;
+}
+
+.dark-mode button {
+    background-color: #555;
+    color: white;
+}
+
+.dark-mode button:hover {
+    background-color: #777;
+}
+
+/* Position the parent container relative */
+body {
+    position: relative;
+}
+
+/* Position the logout button at the top right */
+.logout-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Adjusted to leave space for the dark mode button */
+    padding: 10px 20px;
+    background-color: #69a0e4;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* Position the dark mode button at the top right */
+.dark-mode-btn {
+    position: absolute;
+    top: 20px;
+    right: 115px;  /* Adjusted right position to leave space */
+    padding: 10px 20px;
+    background-color: #69a0e4;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.dark-mode-btn:hover {
+    background-color: #4f79ad;
+}
+    </style>
+</head>
+<body>
+    <h2> Timetable</h2>
+    <table id="timetable">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+                <th>Sunday</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Default row will be added here if no timetable data exists -->
+            <tr>
+                <td><input type="time" id="time1" value="08:00" onchange="checkForNewRow(this)"></td>
+                <td><input type="text" id="mon1" placeholder="Activity"></td>
+                <td><input type="text" id="tue1" placeholder="Activity"></td>
+                <td><input type="text" id="wed1" placeholder="Activity"></td>
+                <td><input type="text" id="thu1" placeholder="Activity"></td>
+                <td><input type="text" id="fri1" placeholder="Activity"></td>
+                <td><input type="text" id="sat1" placeholder="Activity"></td>
+                <td><input type="text" id="sun1" placeholder="Activity"></td>
+            </tr>
+        </tbody>
+    </table>
+    <div>
+    <button onclick="saveTimetable()">Save Timetable</button>
+    <button onclick="window.location.href='/todo'">Go to To-Do List</button>
+    <button onclick="toggleDarkMode()" class="dark-mode-btn">Dark Mode</button>
+    <form action="{{ url_for('logout') }}" method="POST">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+    </div>    
+    
+    <script>
+        // Function to toggle dark mode
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        
+            let darkModeEnabled = document.body.classList.contains("dark-mode");
+        
+            // Store dark mode preference in localStorage
+            localStorage.setItem("darkMode", darkModeEnabled);
+        }
+        
+        // Ensure dark mode persists on page reload
+        window.onload = function () {
+            console.log("Page has loaded.");  // Debugging
+        
+            // Check for dark mode in localStorage
+            let darkModeSetting = localStorage.getItem("darkMode");
+            console.log("Stored dark mode setting:", darkModeSetting); // Debugging
+        
+            if (darkModeSetting === "true") {
+                console.log("Applying dark mode...");
+                document.body.classList.add("dark-mode");
+            } else {
+                console.log("Dark mode not enabled.");
+            }
+        
+            // Load timetable data from localStorage and restore it
+            const table = document.getElementById('timetable').getElementsByTagName('tbody')[0];
+        
+            // If no timetable exists in localStorage, add a default row
+            if (!localStorage.getItem('timetable')) {
+                addNewRow();  // Ensure at least one row exists
+            } else {
+                const timetable = JSON.parse(localStorage.getItem('timetable'));
+                let rowIndex = 0;
+                Object.keys(timetable).forEach((key, index) => {
+                    if (index % 8 === 0 && index > 0) {
+                        rowIndex++; // Increment rowIndex every 8 entries
+                        addNewRow(); // Add new row if we haven't reached the right row yet
+                    }
+        
+                    const row = table.rows[rowIndex];
+                    const cellIndex = index % 8;
+                    const inputElement = row.cells[cellIndex].querySelector('input');
+                    
+                    // Ensure the input element exists before assigning value
+                    if (inputElement) {
+                        inputElement.value = timetable[key];
+                    }
+                });
+            }
+        };
+        
+        // Function to check if the time input is filled, and add a new row if it is
+        function checkForNewRow(inputElement) {
+            const row = inputElement.closest('tr'); // Get the current row
+            const timeInput = row.querySelector('input[type="time"]'); // Get the time input in that row
+        
+            if (timeInput && timeInput.value.trim() !== "") {
+                // Time input is filled, so add a new row
+                addNewRow();
+            }
+        }
+        
+        // Function to add a new row to the timetable
+        function addNewRow() {
+            const table = document.getElementById('timetable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();  // Create a new row
+        
+            // Create and add the time cell
+            const timeCell = newRow.insertCell(0);
+            timeCell.innerHTML = '<input type="time" class="time-input" onchange="checkForNewRow(this)">';
+        
+            // Create and add the day cells (Monday to Sunday)
+            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            days.forEach(day => {
+                const dayCell = newRow.insertCell();
+                dayCell.innerHTML = `<input type="text" class="activity-input" placeholder="Activity">`;
+            });
+        }
+        
+        // Function to save the timetable data to localStorage
+        function saveTimetable() {
+            const timetable = {};
+            const rows = document.getElementById('timetable').rows;
+        
+            // Collect all values for each row
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+        
+                // Check if there are input elements in the row to avoid errors
+                const timeInput = row.cells[0].querySelector('input');
+                if (timeInput && timeInput.value !== "") {
+                    timetable[`time${i + 1}`] = timeInput.value;  // Store time
+        
+                    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                    days.forEach((day, index) => {
+                        const activityInput = row.cells[index + 1].querySelector('input');
+                        if (activityInput) {
+                            timetable[`${day}${i + 1}`] = activityInput.value;
+                        }
+                    });
+                }
+            }
+        
+            // Log to console for debugging purposes
+            console.log("Timetable Data:", timetable);
+        
+            // Save the timetable to localStorage as a JSON object
+            localStorage.setItem('timetable', JSON.stringify(timetable));
+        
+            alert('Timetable saved!');
+        }
+        </script>
+        
+</body>
+</html>
